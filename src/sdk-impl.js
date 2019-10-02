@@ -265,9 +265,6 @@ SdkImpl.prototype.onAdsManagerLoaded = function(adsManagerLoadedEvent) {
       google.ima.AdEvent.Type.STARTED,
       this.onAdStarted.bind(this));
   this.adsManager.addEventListener(
-      google.ima.AdEvent.Type.CLICK,
-      this.onAdPaused.bind(this));
-  this.adsManager.addEventListener(
       google.ima.AdEvent.Type.COMPLETE,
       this.onAdComplete.bind(this));
   this.adsManager.addEventListener(
@@ -550,9 +547,10 @@ SdkImpl.prototype.onPlayerReadyForPreroll = function() {
 SdkImpl.prototype.onPlayerReady = function() {
   this.initAdObjects();
 
-  if (this.controller.getSettings().adTagUrl ||
-      this.controller.getSettings().adsResponse) {
-    this.requestAds();
+  if ((this.controller.getSettings().adTagUrl ||
+      this.controller.getSettings().adsResponse) &&
+      this.controller.getSettings().requestMode === 'onLoad') {
+        this.requestAds();
   }
 };
 

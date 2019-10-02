@@ -141,6 +141,10 @@ var PlayerWrapper = function PlayerWrapper(player, adsPluginSettings, controller
   this.vjsPlayer.on('readyforpreroll', this.onReadyForPreroll.bind(this));
   this.vjsPlayer.ready(this.onPlayerReady.bind(this));
 
+  if (this.controller.getSettings().requestMode === 'onPlay') {
+    this.vjsPlayer.one('play', this.controller.requestAds.bind(this.controller));
+  }
+
   this.vjsPlayer.ads(adsPluginSettings);
 };
 
@@ -364,11 +368,11 @@ PlayerWrapper.prototype.play = function () {
 PlayerWrapper.prototype.getPlayerWidth = function () {
   var width = (getComputedStyle(this.vjsPlayer.el()) || {}).width;
 
-  if (!width || parseInt(width, 10) === 0) {
+  if (!width || parseFloat(width) === 0) {
     width = (this.vjsPlayer.el().getBoundingClientRect() || {}).width;
   }
 
-  return parseInt(width, 10) || this.vjsPlayer.width();
+  return parseFloat(width) || this.vjsPlayer.width();
 };
 
 /**
@@ -379,11 +383,11 @@ PlayerWrapper.prototype.getPlayerWidth = function () {
 PlayerWrapper.prototype.getPlayerHeight = function () {
   var height = (getComputedStyle(this.vjsPlayer.el()) || {}).height;
 
-  if (!height || parseInt(height, 10) === 0) {
+  if (!height || parseFloat(height) === 0) {
     height = (this.vjsPlayer.el().getBoundingClientRect() || {}).height;
   }
 
-  return parseInt(height, 10) || this.vjsPlayer.height();
+  return parseFloat(height) || this.vjsPlayer.height();
 };
 
 /**
@@ -697,8 +701,10 @@ AdUi.prototype.createAdContainer = function () {
   this.assignControlAttributes(this.adContainerDiv, 'ima-ad-container');
   this.adContainerDiv.style.position = 'absolute';
   this.adContainerDiv.style.zIndex = 1111;
-  this.adContainerDiv.addEventListener('mouseenter', this.showAdControls.bind(this), false);
-  this.adContainerDiv.addEventListener('mouseleave', this.hideAdControls.bind(this), false);
+  if (!videojs.browser.IS_IOS) {
+    this.adContainerDiv.addEventListener('mouseenter', this.showAdControls.bind(this), false);
+    this.adContainerDiv.addEventListener('mouseleave', this.hideAdControls.bind(this), false);
+  }
   this.createControls();
   this.controller.injectAdContainerDiv(this.adContainerDiv);
 };
@@ -1102,13 +1108,13 @@ AdUi.prototype.setShowCountdown = function (showCountdownIn) {
 };
 
 var name = "videojs-ima";
-var version = "1.6.0";
+var version = "1.6.3";
 var license = "Apache-2.0";
 var main = "./dist/videojs.ima.js";
 var module$1 = "./dist/videojs.ima.es.js";
 var author = { "name": "Google Inc." };
 var engines = { "node": ">=0.8.0" };
-var scripts = { "contBuild": "watch 'npm run rollup:max' src", "predevServer": "echo \"Starting up server on localhost:8000.\"", "devServer": "npm-run-all -p testServer contBuild", "lint": "eslint \"src/*.js\"", "rollup": "npm-run-all rollup:*", "rollup:max": "rollup -c configs/rollup.config.js", "rollup:es": "rollup -c configs/rollup.config.es.js", "rollup:min": "rollup -c configs/rollup.config.min.js", "pretest": "npm run rollup", "start": "npm run devServer", "test": "npm-run-all test:*", "test:vjs5": "npm install video.js@5.19.2 --no-save && npm-run-all -p -r testServer webdriver", "test:vjs6": "npm install video.js@6 --no-save && npm-run-all -p -r testServer webdriver", "test:vjs7": "npm install video.js@7 --no-save && npm-run-all -p -r testServer webdriver", "testServer": "http-server --cors -p 8000 --silent", "preversion": "node scripts/preversion.js && npm run lint && npm test", "version": "node scripts/version.js", "postversion": "node scripts/postversion.js", "webdriver": "mocha test/webdriver/*.js --no-timeouts" };
+var scripts = { "contBuild": "watch 'npm run rollup:max' src", "predevServer": "echo \"Starting up server on localhost:8000.\"", "devServer": "npm-run-all -p testServer contBuild", "lint": "eslint \"src/*.js\"", "rollup": "npm-run-all rollup:*", "rollup:max": "rollup -c configs/rollup.config.js", "rollup:es": "rollup -c configs/rollup.config.es.js", "rollup:min": "rollup -c configs/rollup.config.min.js", "pretest": "npm run rollup", "start": "npm run devServer", "test": "npm-run-all test:*", "test:vjs5": "npm install video.js@5.19.2 --no-save && npm-run-all -p -r testServer webdriver", "test:vjs6": "npm install video.js@6 --no-save && npm-run-all -p -r testServer webdriver", "test:vjs7": "npm install video.js@7 --no-save && npm-run-all -p -r testServer webdriver", "testServer": "http-server --cors -p 8000 --silent", "preversion": "node scripts/preversion.js && npm run lint && npm test", "version": "node scripts/version.js", "postversion": "node scripts/postversion.js", "webdriver": "mocha test/webdriver/basic-hearst-mod.js --no-timeouts" };
 var repository = { "type": "git", "url": "https://github.com/googleads/videojs-ima" };
 var files = ["CHANGELOG.md", "LICENSE", "README.md", "dist/", "src/"];
 var dependencies = { "can-autoplay": "^3.0.0", "cryptiles": "^4.1.2", "video.js": "^5.19.2 || ^6 || ^7", "videojs-contrib-ads": "^6" };
@@ -1360,7 +1366,6 @@ SdkImpl.prototype.onAdsManagerLoaded = function (adsManagerLoadedEvent) {
 
   this.adsManager.addEventListener(google.ima.AdEvent.Type.LOADED, this.onAdLoaded.bind(this));
   this.adsManager.addEventListener(google.ima.AdEvent.Type.STARTED, this.onAdStarted.bind(this));
-  this.adsManager.addEventListener(google.ima.AdEvent.Type.CLICK, this.onAdPaused.bind(this));
   this.adsManager.addEventListener(google.ima.AdEvent.Type.COMPLETE, this.onAdComplete.bind(this));
   this.adsManager.addEventListener(google.ima.AdEvent.Type.SKIPPED, this.onAdComplete.bind(this));
   this.adsManager.addEventListener(google.ima.AdEvent.Type.LOG, this.onAdLog.bind(this));
@@ -1611,7 +1616,7 @@ SdkImpl.prototype.onPlayerReadyForPreroll = function () {
 SdkImpl.prototype.onPlayerReady = function () {
   this.initAdObjects();
 
-  if (this.controller.getSettings().adTagUrl || this.controller.getSettings().adsResponse) {
+  if ((this.controller.getSettings().adTagUrl || this.controller.getSettings().adsResponse) && this.controller.getSettings().requestMode === 'onLoad') {
     this.requestAds();
   }
 };
@@ -1896,7 +1901,8 @@ Controller.IMA_DEFAULTS = {
   prerollTimeout: 1000,
   adLabel: 'Advertisement',
   adLabelNofN: 'of',
-  showControlsForJSAds: true
+  showControlsForJSAds: true,
+  requestMode: 'onLoad'
 };
 
 /**
